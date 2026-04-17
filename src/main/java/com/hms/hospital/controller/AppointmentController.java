@@ -1,17 +1,28 @@
 package com.hms.hospital.controller;
-import com.hms.hospital.entity.*;
-import com.hms.hospital.repository.*;
-import com.hms.hospital.service.PatientService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.hms.hospital.entity.Appointment;
+import com.hms.hospital.entity.Patient;
+import com.hms.hospital.entity.Role;
+import com.hms.hospital.entity.User;
+import com.hms.hospital.repository.AppointmentRepository;
+import com.hms.hospital.repository.UserRepository;
+import com.hms.hospital.service.PatientService;
+
+import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequiredArgsConstructor
@@ -66,9 +77,9 @@ public class AppointmentController {
         appointment.setStatus("SCHEDULED");
 
         appointmentRepo.save(appointment);
-        ra.addFlashAttribute("success", "Appointment booked successfully!");
 
-        return "redirect:/appointment/calendar";
+        ra.addFlashAttribute("success", "Appointment booked successfully!");
+        return "redirect:/appointment/calendar?reload=true";
     }
 
     @GetMapping("/doctor/events")
@@ -80,9 +91,31 @@ public class AppointmentController {
 
     @GetMapping("/events")
     @ResponseBody
-    public List<Appointment> getEvents(Principal principal) {
-        Patient patient = patientService.findPatientByEmail(principal.getName())
-                .orElseThrow(() -> new RuntimeException("Patient not found"));
-        return appointmentRepo.findByPatientIdOrderByStartTimeAsc(patient.getId());
+    public List<?> getEvents(Principal principal) {
+
+        User user = userRepo.findByEmail(principal.getName())
+                .orElseThrow();
+
+        Long userId = user.getId();
+
+        List<Appointment> list;
+
+        if (user.getRole().name().equals("PATIENT")) {
+            list = appointmentRepo.findByPatientUserIdOrderByStartTimeAsc(userId);
+        } 
+        else if (user.getRole().name().equals("DOCTOR")) {
+            list = appointmentRepo.findByDoctorIdOrderByStartTimeAsc(userId);
+        } 
+        else {
+            list = appointmentRepo.findAll();
+        }
+
+        return list.stream().map(a -> Map.of(
+                "title", a.getTitle(),
+                "start", a.getStartTime().toString(),
+                "end", a.getEndTime().toString(),
+                "status", a.getStatus(),
+                "patientName", a.getPatient().getName()
+        )).toList();
     }
 }

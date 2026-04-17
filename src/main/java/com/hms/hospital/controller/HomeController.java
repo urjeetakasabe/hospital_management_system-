@@ -1,5 +1,6 @@
 package com.hms.hospital.controller;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -15,8 +16,18 @@ public class HomeController {
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(@AuthenticationPrincipal UserDetails user, Model model) {
-        model.addAttribute("email", user.getUsername());
-        return "dashboard";
+    public String dashboard(Authentication authentication) {
+
+        String role = authentication.getAuthorities().iterator().next().getAuthority();
+
+        if (role.equals("ROLE_ADMIN")) {
+            return "redirect:/admin/dashboard";
+        }
+
+        if (role.equals("ROLE_DOCTOR")) {
+            return "redirect:/doctor/dashboard";
+        }
+
+        return "redirect:/patient/dashboard";
     }
 }
