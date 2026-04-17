@@ -38,7 +38,9 @@ public class AdminController {
 
     @PostMapping("/users/{id}/delete")
     public String deleteUser(@PathVariable Long id, RedirectAttributes ra) {
+
         userRepo.deleteById(id);
+
         ra.addFlashAttribute("msg", "User deleted successfully!");
         return "redirect:/admin/users";
     }
@@ -57,4 +59,15 @@ public class AdminController {
         model.addAttribute("appointments", appointmentRepo.findAllByOrderByStartTimeDesc());
         return "admin/appointments";
     }
+    
+    @PostMapping("/appointments/{id}/delete")
+    public String deleteAppointment(@PathVariable Long id,
+                                    RedirectAttributes ra) {
+
+        appointmentRepo.deleteById(id);
+
+        ra.addFlashAttribute("msg", "Appointment deleted successfully!");
+        return "redirect:/admin/appointments";
+    }
+
 }

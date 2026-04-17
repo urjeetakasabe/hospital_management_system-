@@ -19,4 +19,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+    
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Patient patient;
 }
